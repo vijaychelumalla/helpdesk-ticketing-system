@@ -6,21 +6,66 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
-
-
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register User
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Vijay
+ *               email:
+ *                 type: string
+ *                 example: vijay@gmail.com
+ *               password:
+ *                 type: string
+ *                 example: 123456
+ *               role:
+ *                 type: string
+ *                 example: customer
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ */
 router.post("/register", register);
+
+// router.post("/register", register);
 /**
  * @swagger
  * /api/auth/login:
  *   post:
  *     summary: Login User
  *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: test@gmail.com
+ *               password:
+ *                 type: string
+ *                 example: 123456
  *     responses:
  *       200:
  *         description: Login successful
  */
+router.post("/login", login);
 
-router.post("/login" , login);
 /**
  * @swagger
  * /api/auth/me:
@@ -84,12 +129,4 @@ router.post(
 );
 
 
-/**
- * @swagger
- * /api/auth/register:
- *   post:
- *     summary: Register User
- *     tags: [Auth]
- *     responses:
- *       /** */
 export default router;
