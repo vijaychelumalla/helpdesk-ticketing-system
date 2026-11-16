@@ -24,14 +24,19 @@ const sendEmail = async (
     config.secure = process.env.EMAIL_SECURE === "true"; // false for port 587, true for 465
   }
 
-  const transporter = nodemailer.createTransport(config);
+  try {
+    const transporter = nodemailer.createTransport(config);
 
-  await transporter.sendMail({
-    from: emailUser,
-    to,
-    subject,
-    text,
-  });
+    await transporter.sendMail({
+      from: emailUser,
+      to,
+      subject,
+      text,
+    });
+    console.log(`Email notification sent to ${to}: "${subject}"`);
+  } catch (error) {
+    console.warn(`Email notification to ${to} skipped or failed: ${error.message}`);
+  }
 };
 
 export default sendEmail;

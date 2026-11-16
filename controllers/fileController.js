@@ -9,10 +9,15 @@ export const uploadFile = async (req, res) => {
       });
     }
 
+    const file = {
+      ...req.file,
+      path: req.file.path.replace(/\\/g, "/"),
+    };
+
     res.status(200).json({
       success: true,
       message: "File uploaded successfully",
-      file: req.file,
+      file,
     });
   } catch (error) {
     console.log(error);
@@ -38,7 +43,8 @@ export const attachFileToTicket = async (req, res) => {
       });
     }
 
-    ticket.attachments.push(req.file.path);
+    const normalizedPath = req.file.path.replace(/\\/g, "/");
+    ticket.attachments.push(normalizedPath);
 
     await ticket.save();
 

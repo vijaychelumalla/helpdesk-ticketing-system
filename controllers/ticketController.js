@@ -1,27 +1,27 @@
+import mongoose from "mongoose";
 import Ticket from "../models/Ticket.js";
 import User from "../models/User.js";
 import logActivity from "../utils/logActivity.js";
-
 import sendEmail from "../utils/sendEmail.js";
 export const createTicket = async (req, res) => {
   try {
-    const { title, description, priority, tags } = req.body;
+    const { title, description, priority, tags, attachments } = req.body;
 
     const ticket = await Ticket.create({
       title,
       description,
       priority,
-      tags,
+      tags: tags || [],
+      attachments: attachments || [],
       createdBy: req.user.id,
     });
 
-
-await logActivity(
-  ticket._id,
-  req.user.id,
-  "Ticket Created",
-  ticket.title
-);
+    await logActivity(
+      ticket._id,
+      req.user.id,
+      "Ticket Created",
+      ticket.title
+    );
     res.status(201).json({
       success: true,
       message: "Ticket created successfully",
@@ -37,48 +37,23 @@ await logActivity(
   }
 };
 
-
-// export const getTickets = async (req, res) => {
-//   try {
-//     let tickets;
-
-//     if (req.user.role === "customer") {
-//       tickets = await Ticket.find({
-//         createdBy: req.user.id,
-//       })
-//         .populate("createdBy", "name email")
-//         .populate("assignedTo", "name email");
-//     } else {
-//       tickets = await Ticket.find()
-//         .populate("createdBy", "name email")
-//         .populate("assignedTo", "name email");
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       count: tickets.length,
-//       tickets,
-//     });
-//   } catch (error) {
-//     console.log(error);
-
-//     res.status(500).json({
-//       success: false,
-//       message: "Server Error",
-//     });
-//   }
-// };
-
 export const getTickets = async (req, res) => {
   try {
     const {
       status,
       priority,
+      search,
+      assignedTo,
       page = 1,
       limit = 10,
     } = req.query;
 
     const query = {};
+
+    // Scoped to customer: customer only sees their own tickets
+    if (req.user.role === "customer") {
+      query.createdBy = req.user.id;
+    }
 
     if (status) {
       query.status = status;
@@ -88,11 +63,22 @@ export const getTickets = async (req, res) => {
       query.priority = priority;
     }
 
-    const skip = (page - 1) * limit;
+    if (assignedTo) {
+      query.assignedTo = assignedTo;
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
 
     const tickets = await Ticket.find(query)
-      .populate("createdBy", "name email")
-      .populate("assignedTo", "name email")
+      .populate("createdBy", "name email role")
+      .populate("assignedTo", "name email role")
       .skip(skip)
       .limit(Number(limit))
       .sort({ createdAt: -1 });
@@ -103,7 +89,7 @@ export const getTickets = async (req, res) => {
       success: true,
       total,
       page: Number(page),
-      pages: Math.ceil(total / limit),
+      pages: Math.ceil(total / Number(limit)),
       tickets,
     });
   } catch (error) {
@@ -119,8 +105,8 @@ export const getTickets = async (req, res) => {
 export const getTicketById = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
-      .populate("createdBy", "name email")
-      .populate("assignedTo", "name email");
+      .populate("createdBy", "name email role")
+      .populate("assignedTo", "name email role");
 
     if (!ticket) {
       return res.status(404).json({
@@ -156,7 +142,29 @@ export const getTicketById = async (req, res) => {
 
 export const assignTicket = async (req, res) => {
   try {
+    // Only authenticated Admin users can assign or reassign tickets
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Only administrators can assign or reassign tickets",
+      });
+    }
+
     const { agentId } = req.body;
+
+    if (!agentId || !mongoose.Types.ObjectId.isValid(agentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid Agent ID is required",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Ticket ID",
+      });
+    }
 
     const ticket = await Ticket.findById(req.params.id);
 
@@ -176,28 +184,37 @@ export const assignTicket = async (req, res) => {
       });
     }
 
-    if (!["agent", "admin"].includes(agent.role)) {
+    if (agent.role !== "agent") {
       return res.status(400).json({
         success: false,
         message: "Selected user is not an agent",
       });
     }
 
-    ticket.assignedTo = agentId;
+    if (agent.isActive === false) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected agent account is deactivated",
+      });
+    }
 
+    const isReassignment = !!ticket.assignedTo && ticket.assignedTo.toString() !== agentId.toString();
+
+    ticket.assignedTo = agentId;
     await ticket.save();
 
     await sendEmail(
-  agent.email,
-  "New Ticket Assigned",
-  `You have been assigned a new ticket: ${ticket.title}`
-);
+      agent.email,
+      isReassignment ? "Ticket Reassigned" : "New Ticket Assigned",
+      `You have been assigned to ticket: ${ticket.title}`
+    );
+
     await logActivity(
-  ticket._id,
-  req.user.id,
-  "Ticket Assigned",
-  `Assigned to ${agent.name}`
-);
+      ticket._id,
+      req.user.id,
+      isReassignment ? "Ticket Reassigned" : "Ticket Assigned",
+      `Assigned to ${agent.name} (${agent.email})`
+    );
 
     const updatedTicket = await Ticket.findById(ticket._id)
       .populate("createdBy", "name email role")
@@ -205,11 +222,11 @@ export const assignTicket = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Ticket assigned successfully",
+      message: isReassignment ? "Ticket reassigned successfully" : "Ticket assigned successfully",
       ticket: updatedTicket,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Assign Ticket Error:", error);
 
     res.status(500).json({
       success: false,

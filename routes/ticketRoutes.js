@@ -8,7 +8,7 @@ const router = express.Router();
 router.post(
   "/",
   authMiddleware,
-  roleMiddleware("customer"),
+  roleMiddleware("customer", "agent", "admin"),
   createTicket
 );
 
@@ -27,7 +27,7 @@ router.get(
 router.patch(
   "/:id/assign",
   authMiddleware,
-  roleMiddleware("agent", "admin"),
+  roleMiddleware("admin"),
   assignTicket
 );
 
