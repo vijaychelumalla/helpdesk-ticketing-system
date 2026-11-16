@@ -16,10 +16,10 @@ An enterprise-grade, full-stack **IT Helpdesk and Support Ticket Management Syst
 
 | Service | Environment | URL | Status |
 | :--- | :--- | :--- | :--- |
-| **Frontend Application** | Production (Vercel) | [https://helpdesk-ticketing-system-frontend.vercel.app](https://helpdesk-ticketing-system-frontend.vercel.app) *(or your deployed Vercel domain)* | `Live` |
-| **Backend REST API** | Production (Render) | [https://helpdesk-ticketing-system-api.onrender.com](https://helpdesk-ticketing-system-api.onrender.com) *(or your deployed Render service)* | `Live` |
-| **Interactive API Docs** | Swagger OpenAPI 3.0 | `https://<your-render-url>/api-docs` | `Live` |
-| **API Health Check** | Monitoring Endpoint | `https://<your-render-url>/api/health` | `200 OK` |
+| **Frontend Application** | Production (Vercel) | [https://frontend-liart-three-29.vercel.app](https://frontend-liart-three-29.vercel.app) | `Live` |
+| **Backend REST API** | Production (Vercel) | [https://helpdesk-kappa-five.vercel.app](https://helpdesk-kappa-five.vercel.app) | `Live` |
+| **Interactive API Docs** | Swagger OpenAPI 3.0 | [https://helpdesk-kappa-five.vercel.app/api-docs](https://helpdesk-kappa-five.vercel.app/api-docs) | `Live` |
+| **API Health Check** | Monitoring Endpoint | [https://helpdesk-kappa-five.vercel.app/api/health](https://helpdesk-kappa-five.vercel.app/api/health) | `200 OK` |
 
 ---
 

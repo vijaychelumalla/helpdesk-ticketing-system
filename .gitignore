@@ -23,6 +23,8 @@ frontend/.env.production.local
 dist/
 build/
 frontend/dist/
+.vercel/
+frontend/.vercel/
 
 # Uploads & local storage (keep folder structure via .gitkeep)
 uploads/documents/*
@@ -49,3 +51,5 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
